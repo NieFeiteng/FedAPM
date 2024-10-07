@@ -95,9 +95,6 @@ class PerLocalUpdate(object):
         self.test_acc_personal, self.test_acc_global, self.test_personal_loss, self.test_global_loss = test_inference(self.args, self.model, global_model, testloader=self.testloader, criterion=self.criterion)
         # self.test_acc_global = test_inference(self.args, model=global_model, testloader=self.testloader)
 
-
-
-
     def calculate_gradient_l2_norm(self, w):
         self.model.train()
         data_iterator = iter(self.trainloader)
@@ -128,11 +125,9 @@ class PerLocalUpdate(object):
         return total_norm
 
     def train_val_test(self, dataset, idxs, user_id, malicious_users):
-        # 定义新的训练数据和测试数据的比例
         train_ratio = 0.8
         test_ratio = 0.2
 
-        # 划分训练数据和测试数据
         total_samples = len(idxs)
         train_size = int(train_ratio * total_samples)
         test_size = total_samples - train_size
@@ -145,11 +140,7 @@ class PerLocalUpdate(object):
         return trainloader, testloader
 
     def update_weights(self, global_round, global_model, w, UserID, lr, malicious_users):
-
         start_time = time.monotonic()
-
-
-
 
         local_sum = {}
         self.model.train()
@@ -160,9 +151,6 @@ class PerLocalUpdate(object):
 
         # if self.args.framework == 'pFedMe' or self.args.framework == 'lp-proj-2' or self.args.framework == 'FLAME-lp-proj-2' or self.args.framework == 'ditto':
         #     self.wi = copy.deepcopy(w)
-
-
-
 
         optimizer = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=self.args.momentum)
         epoch_loss = []
@@ -250,7 +238,6 @@ class PerLocalUpdate(object):
                     #         len(self.trainloader.dataset),
                     #         100. * batch_idx / len(self.trainloader), loss.item()))
 
-
                 # if self.args.framework == 'ditto':
                 #
                 #     self.local_model.zero_grad()
@@ -260,9 +247,6 @@ class PerLocalUpdate(object):
                 #     loss_local.backward()
                 #     optimizer_local.step()
                 #     self.wi = copy.deepcopy(self.local_model.state_dict())
-
-
-
 
                 weights = self.model.state_dict()
 
@@ -297,9 +281,7 @@ class PerLocalUpdate(object):
                         loss_local.backward()
                         optimizer_local.step()
                     self.wi = copy.deepcopy(self.local_model.state_dict())
-
-
-
+                    
             # weights = self.model.state_dict()
             # if self.args.framework == 'FLAME':
             #     for key in self.alpha.keys():
@@ -334,10 +316,6 @@ class PerLocalUpdate(object):
         # elif self.args.framework == 'pFedMe':
         #     for key in self.alpha.keys():
         #         self.wi[key] = self.wi[key] - self.args.eta2 * self.args.Lambda * (self.wi[key] - weights[key])
-
-
-
-
 
         # elif self.args.framework == 'lp-proj-2':
         #     # self.wi[key] = copy.deepcopy(weights[key])
@@ -389,7 +367,6 @@ class PerLocalUpdate(object):
 
         return personalized_loss, global_loss
 
-
 def test_inference(args, personal_model, global_model, testloader, criterion):
 
     # loss, total, personal_correct, global_correct = 0.0, 0.0, 0.0,0.0
@@ -436,8 +413,6 @@ def test_inference(args, personal_model, global_model, testloader, criterion):
             global_loss = criterion(global_outputs, labels.long())
             total_personalized_test_loss += personal_loss.item()
             total_global_test_loss += global_loss.item()
-
-
 
             total += labels.size(0)
             personal_correct += (personal_predicted == labels).sum().item()

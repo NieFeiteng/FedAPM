@@ -25,8 +25,6 @@ class MLP(nn.Module):
         self.relu2 = nn.ReLU()
         self.fc3 = nn.Linear(hidden_size2, num_classes)
 
-        
-
     def load_first_n_layers(self, w, n):
         own_state = self.state_dict()
         layer_names = [name for name in own_state.keys()]
@@ -34,8 +32,6 @@ class MLP(nn.Module):
             if name in layer_names[:n]:
                 own_state[name].copy_(param)
         self.load_state_dict(own_state, strict=False)
-
-
 
     def load_remaining_layers(self, w, n):
         own_state = self.state_dict()
@@ -45,9 +41,6 @@ class MLP(nn.Module):
                 own_state[name].copy_(param)
         self.load_state_dict(own_state, strict=False)
 
-        
-
-
     def forward(self, x):
         out = self.fc1(x)
         out = self.relu1(out)
@@ -55,7 +48,6 @@ class MLP(nn.Module):
         out = self.relu2(out)
         out = self.fc3(out)
         return out
-
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -95,7 +87,6 @@ class ResNet18(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -104,7 +95,6 @@ class ResNet18(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         
-
     def _make_layer(self, block, out_channels, blocks, stride=1):
         downsample = None
         if stride != 1 or self.in_channels != out_channels * block.expansion:
@@ -119,7 +109,6 @@ class ResNet18(nn.Module):
             layers.append(block(self.in_channels, out_channels))
 
         return nn.Sequential(*layers)
-
 
     def load_first_n_layers(self, w, n):
         own_state = self.state_dict()
@@ -136,9 +125,6 @@ class ResNet18(nn.Module):
             if name in layer_names[n:]:
                 own_state[name].copy_(param)
         self.load_state_dict(own_state, strict=False)
-
-
-
 
     def forward(self, x):
         if x.dim() == 3:
@@ -160,47 +146,16 @@ class ResNet18(nn.Module):
 
         return x
 
-    def set_trainable_layers(self, n, train_first_n=True):
-        """
-        Set which layers are trainable based on the number of layers `n`.
-        If `train_first_n` is True, train the first `n` layers and freeze the rest.
-        If `train_first_n` is False, freeze the first `n` layers and train the rest.
-        """
-        all_layers = [
-            self.conv1, self.bn1, 
-            *self.layer1, *self.layer2, *self.layer3, *self.layer4,
-            self.fc
-        ]
-        
-        # Flatten all layers into a list of parameters
-        layer_params = []
-        for layer in all_layers:
-            for param in layer.parameters():
-                layer_params.append(param)
-
-        # Freeze all layers first
-        for param in layer_params:
-            param.requires_grad = False
-
-        if train_first_n:
-            # Unfreeze the first `n` layers
-            count = 0
-            for param in layer_params:
-                if count < n:
-                    param.requires_grad = True
-                    count += 1
-        else:
-            # Unfreeze the layers after the first `n` layers
-            count = 0
-            for param in layer_params:
-                if count >= n:
-                    param.requires_grad = True
-                    count += 1
-
-
-    
-
-
+ 
+    def load_remaining_layers(self, w, n):
+        own_state = self.state_dict()
+        layer_names = [name for name in own_state.keys()]
+        for name, param in w.items():
+            if name in layer_names[n:]:
+                own_state[name].copy_(param)
+        self.load_state_dict(own_state, strict=False)
+        temp = self.state_dict()
+ 
 
 class CNN(nn.Module):
     def __init__(self):
@@ -321,8 +276,6 @@ class CNN1(nn.Module):
 
         return x
 
-
-
 class CNN2(nn.Module):
     def __init__(self):
         super().__init__()
@@ -338,8 +291,6 @@ class CNN2(nn.Module):
         x = self.pool(self.act(self.conv2(x)))
         x = x.flatten(1)
         return self.out(x)
-
-    
 
 class FuseBaseSelfAttention(nn.Module):
     def __init__(self, d_hid: int = 64, d_head: int = 4, is_adapter: bool = False):
@@ -377,7 +328,6 @@ class FuseBaseSelfAttention(nn.Module):
         return x
 
     def add_adapters(self, adapter_hidden_dim, dropout):
-        """添加适配器层"""
         self.adapter1 = AdapterBlock(self.d_hid * self.d_head, adapter_hidden_dim, dropout)
         self.adapter2 = AdapterBlock(self.d_hid * self.d_head, adapter_hidden_dim, dropout)
 
@@ -563,8 +513,6 @@ class ImageTextClassifier(nn.Module):
                 own_state[name].copy_(param)
         self.load_state_dict(own_state, strict=False)
 
-
-
     def load_remaining_layers(self, w, n):
         own_state = self.state_dict()
         layer_names = [name for name in own_state.keys()]
@@ -609,7 +557,6 @@ class BaseSelfAttention(nn.Module):
         x = (att.unsqueeze(2) * x).sum(axis=1)
         return x
     
-
 class Conv1dEncoder(nn.Module):
     def __init__(
         self,
@@ -649,7 +596,6 @@ class Conv1dEncoder(nn.Module):
         x = self.dropout(x)
         x = x.permute(0, 2, 1)
         return x
-    
     
 class HARClassifier(nn.Module):
     def __init__(
@@ -823,8 +769,6 @@ class HARClassifier(nn.Module):
         self.load_state_dict(own_state, strict=False)
         temp = self.state_dict()
 
-
-
     def load_remaining_layers(self, w, n):
         own_state = self.state_dict()
         layer_names = [name for name in own_state.keys()]
@@ -845,7 +789,6 @@ class HARClassifier(nn.Module):
         
         self.load_state_dict(own_state, strict=False)    
        
-
 class MMActionClassifier(nn.Module):
     def __init__(
         self, 
@@ -926,7 +869,6 @@ class MMActionClassifier(nn.Module):
                     d_head=d_head
                 )
 
-
         # classifier head
         if self.en_att and self.att_name == "fuse_base":
             self.classifier = nn.Sequential(
@@ -949,7 +891,6 @@ class MMActionClassifier(nn.Module):
          # Projection head
         self.init_weight()
         
-            
             
     def init_weight(self):
         for m in self._modules:
@@ -1046,7 +987,6 @@ class MMActionClassifier(nn.Module):
     
     
     def load_first_n_layers(self, w, n):
-        """ 加载前n层的参数 """
         own_state = self.state_dict()
         layer_names = [name for name in own_state.keys()]
         for name, param in w.items():
@@ -1057,7 +997,6 @@ class MMActionClassifier(nn.Module):
 
 
     def load_remaining_layers(self, w, n):
-        """ 加载从第n层到最后的参数 """
         own_state = self.state_dict()
         layer_names = [name for name in own_state.keys()]
         for name, param in w.items():
@@ -1076,6 +1015,3 @@ class MMActionClassifier(nn.Module):
                 own_state[name].copy_(param)
         
         self.load_state_dict(own_state, strict=False)
-
-        
-        

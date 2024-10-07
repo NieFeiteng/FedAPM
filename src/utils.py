@@ -237,9 +237,6 @@ def get_dataset(args):
         elif args.partition == 'hybrid-skew':
             user_groups = hybrid_skew(args.dataset, combined_data, args.num_users, args.q)
 
-
-
-
     return combined_data, user_groups
 
 def average_loss_acc(local_model, num_users, malicious_users):
@@ -278,9 +275,6 @@ def average_loss_acc(local_model, num_users, malicious_users):
     test_acc_personal_variance = statistics.variance(test_acc_personal_local)
     test_acc_global_variance = statistics.variance(test_acc_global_local)
     test_acc_hybrid_variance = statistics.variance(test_acc_hybrid_local)
-
-
-
     test_loss_personal_variance = statistics.variance(test_loss_personal_local)
     test_loss_global_variance = statistics.variance(test_loss_global_local)
     test_loss_hybrid_variance = statistics.variance(test_loss_hybrid_local)
@@ -310,8 +304,6 @@ def average_loss_acc_centralized(local_model, num_users, malicious_users):
         
         F1_local.append(local_model[idx].f1)
         AUC_local.append(local_model[idx].auc)
-
-
 
     train_loss_avg = sum(train_loss_local) / num_benign_users
     test_acc_avg = sum(test_acc_local) / num_benign_users

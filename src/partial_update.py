@@ -303,16 +303,13 @@ def test_inference(args, model, testloader, criterion):
                 all_probs.append(probs)
                 all_labels.append(labels)
 
-
         all_probs = torch.cat(all_probs, dim=0)
         all_labels = torch.cat(all_labels, dim=0)
 
         if num_classes <= 2:
             all_probs = all_probs[:, 1]
 
-
         unique_labels = torch.unique(all_labels)
-
         f1 = f1_metric(all_probs, all_labels)
 
         if len(unique_labels) > 1:

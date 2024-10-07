@@ -1,7 +1,6 @@
 import pandas as pd
 
-# 加载CSV文件
-file_path = './Figures/average_max_metrics.csv'  # 根据需要更改路径
+file_path = './Figures/average_max_metrics.csv' 
 data = pd.read_csv(file_path)
 
 

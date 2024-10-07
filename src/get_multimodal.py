@@ -17,10 +17,6 @@ from models import ImageTextClassifier, MMDatasetGenerator
 from types import SimpleNamespace
 
 def parse_args_for_multimodal(dataset_t, alpha_t: float=1.0):
-    # path_conf = {
-    #     "data_dir": f'../../data/{dataset_t}',
-    #     "output_dir": f'../../data/{dataset_t}/output'
-    # }
     path_conf = {
         "data_dir": f'../data/{dataset_t}',
         "output_dir": f'../data/output'
@@ -62,9 +58,7 @@ def get_dataloaders_for_text_img(user_id, args):
     for client_id in tqdm(dm.client_ids):
         if client_id not in ['test', 'dev'] and client_id.isdigit() and int(client_id) == user_id:
             img_dict = dm.load_img_feat(client_id=client_id)
-            text_dict = dm.load_text_feat(client_id=client_id)
-            # img_dict, test_img_dict = dm.load_img_feat(client_id=client_id)
-            # text_dict, test_text_dict = dm.load_text_feat(client_id=client_id)        
+            text_dict = dm.load_text_feat(client_id=client_id)    
 
     dm.get_label_dist(img_dict, user_id)
 
@@ -104,8 +98,6 @@ def get_dataloaders_for_uci_har(user_id, args):
     acc_dict, test_acc_dict = dm.load_acc_feat(client_id=client_id, fold_idx=1)
     gyro_dict, test_gyro_dict = dm.load_gyro_feat(client_id=client_id, fold_idx=1)
     
-    # acc_dict = dm.load_acc_feat(client_id=client_id)
-    # gyro_dict = dm.load_gyro_feat(client_id=client_id)
     dm.get_label_dist(gyro_dict, client_id)
     
     default_feat_shape_a=np.array([128, feature_len_dict['acc']]),
@@ -131,8 +123,6 @@ def get_dataloaders_for_uci_har(user_id, args):
         default_feat_shape_b=default_feat_shape_b
     )    
     
-    
-    # return train_loader 
     return train_loader, test_loader
 
 
@@ -149,8 +139,6 @@ def get_dataloaders_for_ku_har(user_id, args, fold_idx: int=1):
         dm.client_ids[start_index + 59]
     ]
     
-    # acc_dict, test_acc_dict = dm.load_acc_feat(client_id=client_id,fold_idx = fold_idx)
-    # gyro_dict, test_gyro_dict = dm.load_gyro_feat(client_id=client_id,fold_idx = fold_idx)
 
     acc_dict = {}
     test_acc_dict = {}
@@ -171,10 +159,6 @@ def get_dataloaders_for_ku_har(user_id, args, fold_idx: int=1):
             test_acc_dict = test_acc_data
             gyro_dict = gyro_data
             test_gyro_dict = test_gyro_data        
-    # acc_dict = dm.load_acc_feat(client_id=client_id)
-    # gyro_dict = dm.load_gyro_feat(client_id=client_id)   
-   
-    # dm.get_label_dist(gyro_dict, client_id)
     
     default_feat_shape_a=np.array([256, feature_len_dict['acc']]),
     default_feat_shape_b=np.array([256, feature_len_dict['gyro']]),
@@ -188,7 +172,6 @@ def get_dataloaders_for_ku_har(user_id, args, fold_idx: int=1):
         default_feat_shape_b=default_feat_shape_b
     )
     
-    # dm.get_label_dist(test_gyro_dict, client_id)
 
     test_loader = dm.set_dataloader(
         test_acc_dict,

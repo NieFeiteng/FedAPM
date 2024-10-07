@@ -26,11 +26,7 @@ def main():
     # colors = ['#C8EFFE', '#AD8EDA', '#F9CDD9', '#FFD15B', '#6FD7A3']
     colors = ['#FFFFFF', '#CCCCCC', '#999999', '#666666', '#000000']
     hatches = ['/', '\\', '|', '-']
-#     FFFFFF (白色)
-# CCCCCC (浅灰色)
-# 999999 (中灰色)
-# 666666 (深灰色)
-# 000000 (黑色)
+
     # Set font parameters
     # matplotlib.rcParams['pdf.fonttype'] = 42
     # matplotlib.rcParams['ps.fonttype'] = 42

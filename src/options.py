@@ -32,19 +32,14 @@ def args_parser():
     parser.add_argument('--Lambda', type=float, default=1, help='hpy in Moreau Envelope')
     parser.add_argument('--rho', type=float, default=0.01, help='hyp in Penalty term')
     parser.add_argument('--iid', type=int, default=0, help='Default set to IID. Set to 0 for non-IID.')
-    parser.add_argument('--file_name', type=str, default='name', help='file name')
     parser.add_argument('--seed', type=int, default=10, help='random seed')
     parser.add_argument('--fixed', type=int, default=1, help='fixed local epochs, 1 for fixed')
     parser.add_argument('--eta', type=float, default=0.1, help='learning rate of global model phase 2')
     parser.add_argument('--eta2', type=float, default=0.1, help="learning rate of global model phase 2")
-    parser.add_argument('--target_round', type=int, default=100, help='the number of target round to change eta')
-    parser.add_argument('--verbose', type=int, default=0, help='verbose')
 
     parser.add_argument("--alpha", type=float, default=1.0, help="alpha in direchlet distribution")  
     parser.add_argument('--hid_size', type=int, default=128, help='RNN hidden size dim')
     parser.add_argument('--att', type=bool, default=True,help='self attention applied or not')
-    # parser.add_argument( "--en_att", dest='att', action='store_true', help="enable self-attention")
-    # parser.add_argument('--att_name', type=str, default='fuse_base', help='attention name')
     parser.add_argument('--att_name', type=str, default='fuse_base', help='attention name')
      
     parser.add_argument('--layer_num', type=int, default='4', help='attention name') 
@@ -52,7 +47,7 @@ def args_parser():
 
     args = parser.parse_args()
 
-    if args.dataset in ['crisis_mmd', 'uci_har', 'ku_har', 'crema_d']:
+    if args.dataset in ['crisis_mmd', 'ku_har', 'crema_d']:
         args.is_multimodal = True
     else:
         args.is_multimodal = False    

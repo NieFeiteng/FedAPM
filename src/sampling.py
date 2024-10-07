@@ -9,8 +9,6 @@ def add_gaussian_noise(data, mean=0, std=0.1):
     noise = torch.randn_like(data) * std + mean
     return data + noise
 
-
-
 def mnist_iid(dataset, num_users):
     num_items = int(len(dataset)/num_users)
     dict_users, all_idxs = {}, [i for i in range(len(dataset))]
@@ -19,8 +17,6 @@ def mnist_iid(dataset, num_users):
                                              replace=False))
         all_idxs = list(set(all_idxs) - dict_users[i])
     return dict_users
-
-
 
 def hybrid_skew(dataset_name, dataset, num_users, q):
     # 1/2 clients for q-label skew, 1/2 clients for quantity skew
@@ -44,9 +40,6 @@ def dir_quantity_skew(dataset_name, dataset, num_users):
         data_indices.append(user_data_indices)
 
     return data_indices
-
-
-
 
 def dir_label_skew(dataset_name, dataset, num_users):
     if dataset_name == 'mmnist':

@@ -131,7 +131,6 @@ if __name__ == '__main__':
     norm_params = [] 
     # for epoch in tqdm(range(args.epochs)):
     for epoch in range(args.epochs):
-        #  不用看
         gradients_L2, local_sum, local_train_losses_personal, local_test_accuracies_personal, \
         local_test_accuracies_global, local_train_losses_global = [], [], [], [], [], []
         heterogeneous_param_list = []
