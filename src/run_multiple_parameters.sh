@@ -2,14 +2,12 @@
 > log_fedapm_experiments.txt
 conda activate FedAPM
 
-# 定义每个数据集的默认参数
 declare -A default_lr
 declare -A default_rho
 declare -A default_frac
 declare -A default_layer_num
 declare -A default_num_users
 
-# 从 default_params 获取默认参数和 layer_num, num_users
 default_lr[crisis_mmd]=0.5
 default_rho[crisis_mmd]=0.01
 default_frac[crisis_mmd]=0.3
@@ -53,8 +51,6 @@ framework="FedAPM"
 epochs=300
 local_ep=3
 mu=0.01
-Lambda=1
-
 
 run_experiment() {
     local dataset=$1
@@ -81,11 +77,9 @@ run_experiment() {
         --epochs "$epochs" \
         --local_ep "$local_ep" \
         --mu "$mu" \
-        --Lambda "$Lambda" \
         --rho "$rho" \
         --layer_num "$layer_num" >> log_fedapm_experiments.txt 2>&1
 }
-
 
 for dataset in "${!dataset_info[@]}"; do
     IFS='|' read -r model seeds lrs rhos fracs <<< "${dataset_info[$dataset]}"

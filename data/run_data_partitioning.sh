@@ -1,3 +1,4 @@
 python3 generate_data/data_partitioning/data_partition_crisis_mmd.py 
 python3 generate_data/data_partitioning/data_partition_ku_har.py 
 python3 generate_data/data_partitioning/data_partition_crema_d.py 
+

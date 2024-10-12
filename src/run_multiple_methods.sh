@@ -6,7 +6,6 @@ datasets=( "crisis_mmd" "ku_har" "crema_d" "cifar10")
 epochs=300
 local_ep=3
 mu=0.01
-Lambda=1
 
 
 declare -A dataset_seeds
@@ -77,7 +76,6 @@ for framework in "${frameworks[@]}"; do
                     --epochs $epochs \
                     --local_ep $local_ep \
                     --mu $mu \
-                    --Lambda $Lambda \
                     --layer_num $layer_num 
                     # --layer_num $layer_num >> log_ku_har1.txt 2>&1
       done

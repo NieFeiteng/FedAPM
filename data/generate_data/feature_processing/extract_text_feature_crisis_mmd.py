@@ -92,13 +92,13 @@ if __name__ == '__main__':
         'text', 
         args.feature_type, 
         args.dataset, 
-        f'alpha50'
+        f'alpha10'
     )
     client_file_paths = os.listdir(base_data_path)
     client_file_paths.sort()
     
     # extract based feature
-    if len(client_file_paths) != len(partition_dict) and args.alpha == 5.0:
+    if len(client_file_paths) != len(partition_dict) :
         # iterate over client, including keys = dev/test
         for client in tqdm(list(partition_dict.keys())):
             data_dict = partition_dict[client].copy()
@@ -117,7 +117,6 @@ if __name__ == '__main__':
     # base feature all extracted, and we want to explore other alpha cases
     if len(client_file_paths) == len(partition_dict):
         train_dict = dict()
-        logging.info('Read alpha=5.0 data')
         for client_file_path in tqdm(client_file_paths[:-2]):
             with open(str(base_data_path.joinpath(client_file_path)), "rb") as f: 
                 client_data = pickle.load(f)

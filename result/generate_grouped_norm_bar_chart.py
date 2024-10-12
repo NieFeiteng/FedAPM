@@ -30,7 +30,7 @@ def main():
     # Set font parameters
     # matplotlib.rcParams['pdf.fonttype'] = 42
     # matplotlib.rcParams['ps.fonttype'] = 42
-    plt.rcParams.update({'font.size': 16})
+    # plt.rcParams.update({'font.size': 16})
 
     # Prepare data structure to hold average norm values
     norm_values = defaultdict(dict)  # dataset -> framework -> avg_norm
@@ -124,17 +124,18 @@ def main():
 
             # Add a small vertical offset to ensure the text is not overlapping the bar
             plt.text(bar.get_x() + bar.get_width() / 2.0, height,
-                    formatted_height, ha='center', va='bottom', fontsize='smaller')
-
+                    formatted_height, ha='center', va='bottom', fontsize=15)
+            # plt.text(bar.get_x() + bar.get_width() / 2.0, height,
+            #         formatted_height, ha='center', va='bottom', fontsize=15)
     # Add additional labels or styling as needed
     # plt.legend(title='Frameworks', fontsize=18)
-    plt.legend(fontsize=20)
+    plt.legend(fontsize=26)
 
-    plt.ylabel('$||u_i-u||$', fontsize=20)
+    plt.ylabel('$||u_i-u||$', fontsize=26)
     plt.tick_params(axis='x', which='both', length=0)
     dataset_names = ['CIFAR10', 'CrisisMMD','KU-HAR', 'CREMA-D']
-    plt.xticks(index, dataset_names, fontsize=20)
-    plt.yticks(fontsize=20)
+    plt.xticks(index, dataset_names, fontsize=26)
+    plt.yticks(fontsize=26)
 
     # Display or save the figure
     plt.tight_layout()

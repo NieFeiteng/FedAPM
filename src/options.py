@@ -1,10 +1,8 @@
 import argparse
-
-
 # crisis_mmd ImageTextClassifier 20  
 # ku_har HARClassifier 20
-# crema_d MMActionClassifier 72
-
+# crema_d MMActionClassifier 72 
+# cifar10 CNN 20 
 
 def args_parser():
     parser = argparse.ArgumentParser()
@@ -39,7 +37,6 @@ def args_parser():
 
     parser.add_argument("--alpha", type=float, default=1.0, help="alpha in direchlet distribution")  
     parser.add_argument('--hid_size', type=int, default=128, help='RNN hidden size dim')
-    parser.add_argument('--att', type=bool, default=True,help='self attention applied or not')
     parser.add_argument('--att_name', type=str, default='fuse_base', help='attention name')
      
     parser.add_argument('--layer_num', type=int, default='4', help='attention name') 
