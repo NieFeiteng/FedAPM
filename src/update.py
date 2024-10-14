@@ -39,10 +39,7 @@ class DatasetSplit(Dataset):
 
         if self.partition == 'quality-skew':
             image = image + torch.randn_like(image) * self.user_id * self.noise_scale / self.num_users
-
-
         return torch.tensor(image), torch.tensor(label)
-
 
 class PerLocalUpdate(object):
     def __init__(self, args, global_model, dataset, idxs, logger, w, Proj, user_id, malicious_users):
@@ -56,24 +53,6 @@ class PerLocalUpdate(object):
         if args.framework == 'ditto':
             self.local_model = copy.deepcopy(global_model)
         self.corrupted = args.corrupted
-        # if self.args.model == 'Model1':
-        #     self.model = Model1(args=args)
-        # elif self.args.model == 'Model2':
-        #     self.model = Model2(args=args)
-        # elif self.args.model == 'MLP':
-        #     self.model = MLP(input_size,num_classes)
-        # elif self.args.model == 'MLR':
-        #     self.model = MLR(args=args)
-        # elif self.args.model == 'CNN':
-        #     self.model = CNN()
-        # elif self.args.model == 'SVM':
-        #     self.model = SVM()
-        # elif self.args.model == 'CNN1':
-        #     self.model = CNN1()
-        # elif self.args.model == 'CNN2':
-        #     self.model = CNN2()
-        # else:
-        #     exit('Error: unrecognized model')
         self.dataset_name = args.dataset
         self.model.to(self.args.device)
         self.model.train()
@@ -93,7 +72,6 @@ class PerLocalUpdate(object):
             self.criterion = nn.CrossEntropyLoss()
         self.train_personal_loss, self.train_global_loss = self.inference(self.model, global_model)
         self.test_acc_personal, self.test_acc_global, self.test_personal_loss, self.test_global_loss = test_inference(self.args, self.model, global_model, testloader=self.testloader, criterion=self.criterion)
-        # self.test_acc_global = test_inference(self.args, model=global_model, testloader=self.testloader)
 
     def calculate_gradient_l2_norm(self, w):
         self.model.train()
@@ -114,14 +92,8 @@ class PerLocalUpdate(object):
         for name, param in self.model.named_parameters():
             if param.requires_grad == True:
                 param_norm = (param.grad + self.args.Lambda * (weights[name] - w[name])+self.args.mu*weights[name]).data.norm(2)
-                # param_norm = (param.grad).data.norm(2)
 
                 total_norm += param_norm.item() ** 2
-        # for param in self.model.parameters():
-        #     if param.grad is not None:
-        #         # +(self.args.Lambda * (theta_pre - self.wi))
-        #         param_norm = (param.grad).data.norm(2)
-        #         total_norm += param_norm.item() ** 2
         return total_norm
 
     def train_val_test(self, dataset, idxs, user_id, malicious_users):
@@ -148,9 +120,6 @@ class PerLocalUpdate(object):
 
         if self.args.framework == 'pFedMe' or self.args.framework == 'FLAME' or self.args.framework == 'lp-proj-2' or self.args.framework == 'FLAME-lp-proj-2' or self.args.framework == 'ditto':
             self.wi = copy.deepcopy(w)
-
-        # if self.args.framework == 'pFedMe' or self.args.framework == 'lp-proj-2' or self.args.framework == 'FLAME-lp-proj-2' or self.args.framework == 'ditto':
-        #     self.wi = copy.deepcopy(w)
 
         optimizer = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=self.args.momentum)
         epoch_loss = []
@@ -199,12 +168,6 @@ class PerLocalUpdate(object):
                                 param.grad = param.grad + \
                                              self.args.Lambda * (theta_pre[name]-self.wi[name]) + \
                                              self.args.mu * theta_pre[name]
-                    # elif self.args.framework == 'ditto':
-                    #     for name, param in self.model.named_parameters():
-                    #         if param.requires_grad == True:
-                    #             param.grad = param.grad + \
-                    #                          self.args.Lambda * (theta_pre[name]-w[name]) + \
-                    #                          self.args.mu * theta_pre[name]
                     elif self.args.framework == 'ditto':
                         for name, param in self.model.named_parameters():
                             if param.requires_grad == True:
@@ -222,32 +185,12 @@ class PerLocalUpdate(object):
                                 param.grad = param.grad + \
                                              regularizer_gradient[name] + \
                                              self.args.mu * theta_pre[name]
-                                # param.grad = param.grad + \
-                                #              self.args.mu * theta_pre[name]
-                    # elif self.args.framework == 'ditto':
                     else:
                         continue
                     optimizer.step()
                     self.logger.add_scalar('loss', loss.item())
                     batch_loss.append(loss.item())
                 epoch_loss.append(sum(batch_loss))
-                    # if self.args.verbose and (iter % 1 == 0) and (batch_idx % 10 == 0):
-                    #     print('| >>> Round: {} | Client {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    #         global_round, UserID,
-                    #         iter, batch_idx * len(images),
-                    #         len(self.trainloader.dataset),
-                    #         100. * batch_idx / len(self.trainloader), loss.item()))
-
-                # if self.args.framework == 'ditto':
-                #
-                #     self.local_model.zero_grad()
-                #     optimizer_local.zero_grad()
-                #     log_probs_local = self.local_model(images)
-                #     loss_local = self.criterion(log_probs_local, labels.long())
-                #     loss_local.backward()
-                #     optimizer_local.step()
-                #     self.wi = copy.deepcopy(self.local_model.state_dict())
-
                 weights = self.model.state_dict()
 
                 if self.args.framework == 'FLAME':
@@ -256,21 +199,16 @@ class PerLocalUpdate(object):
                     for key in self.alpha.keys():
                         self.wi[key] = 1 / (hpy_lambda + self.args.rho) * (hpy_lambda * weights[key] + self.args.rho * w[key] - alpha_prev[key])
                         self.alpha[key] = self.alpha[key] + self.args.rho * (self.wi[key] - w[key])
-
-                        # local_sum[key] = (self.wi[key] - wi_prev[key]) + (1 / self.args.rho) * (self.alpha[key] - alpha_prev[key])
                 elif self.args.framework == 'pFedMe':
                     for key in self.alpha.keys():
-                        # self.wi[key] = copy.deepcopy(weights[key])
                         self.wi[key] = self.wi[key] - self.args.eta2 * self.args.Lambda * (self.wi[key] - weights[key])
                         local_sum[key] = self.wi[key]
-
                 elif self.args.framework == 'ditto':
                     self.local_model.train()
                     optimizer_local = torch.optim.SGD(self.local_model.parameters(), lr=self.args.eta, momentum=self.args.momentum)
                     for iter in range(E):
                         images, labels = random.choice(list(self.trainloader))
 
-                    # for batch_idx, (images, labels) in enumerate(self.trainloader):
                         images, labels = images.to(self.args.device), labels.to(self.args.device)
                         if self.args.model == 'MLP' or self.args.model == 'MLR':
                             images = images.reshape(-1, 784)
@@ -281,73 +219,15 @@ class PerLocalUpdate(object):
                         loss_local.backward()
                         optimizer_local.step()
                     self.wi = copy.deepcopy(self.local_model.state_dict())
-                    
-            # weights = self.model.state_dict()
-            # if self.args.framework == 'FLAME':
-            #     for key in self.alpha.keys():
-            #         self.wi[key] = (hpy_lambda * weights[key] + self.args.rho * w[key] - alpha_prev[key]) / (
-            #                 hpy_lambda + self.args.rho)
-            #         self.alpha[key] = self.alpha[key] + self.args.rho * (self.wi[key] - w[key])
-            #
-            # if self.args.framework == 'pFedMe':
-            #     for key in self.alpha.keys():
-            #         self.wi[key] = self.wi[key] - self.args.eta2 * self.args.Lambda * (self.wi[key] - weights[key])
-        # if self.args.framework == 'ditto':
-        #     for batch_idx, (images, labels) in enumerate(self.trainloader):
-        #         images, labels = images.to(self.args.device), labels.to(self.args.device)
-        #         if self.args.model == 'MLP' or self.args.model == 'MLR':
-        #             images = images.reshape(-1, 784)
-        #         self.local_model.zero_grad()
-        #         optimizer_local.zero_grad()
-        #         log_probs_local = self.local_model(images)
-        #         loss_local = self.criterion(log_probs_local, labels.long())
-        #         loss_local.backward()
-        #         optimizer_local.step()
-        #         self.wi = copy.deepcopy(self.local_model.state_dict())
-        #
-        # weights = self.model.state_dict()
-        # if self.args.framework == 'FLAME':
-        #     for key in self.alpha.keys():
-        #         # self.wi[key] = 1/(hpy_lambda + self.args.rho) * \
-        #         #                (hpy_lambda * weights[key] + self.args.rho*w[key]-alpha_prev[key])
-        #         self.alpha[key] = self.alpha[key] + self.args.rho * (self.wi[key] - w[key])
-        #
-        #
-        # elif self.args.framework == 'pFedMe':
-        #     for key in self.alpha.keys():
-        #         self.wi[key] = self.wi[key] - self.args.eta2 * self.args.Lambda * (self.wi[key] - weights[key])
-
-        # elif self.args.framework == 'lp-proj-2':
-        #     # self.wi[key] = copy.deepcopy(weights[key])
-        #     flat_theta = get_flat_model_params(weights)
-        #     self.wi = self.wi - self.args.eta2 * self.args.Lambda * (self.wi - torch.matmul(self.Proj, flat_theta))
-        #     # local_sum = (self.wi)
-        #     # local_sum = (self.wi - wi_prev)
-        #
-        # elif self.args.framework == 'FLAME-lp-proj-2':
-        #     flat_theta = get_flat_model_params(weights)
-        #
-        #     self.wi = 1 / (hpy_lambda + self.args.rho) * \
-        #                    (hpy_lambda * torch.matmul(self.Proj, flat_theta) + self.args.rho * w - alpha_prev)
-        #     self.alpha = self.alpha + self.args.rho * (self.wi - w)
-
-            # local_sum = (self.wi) + (1 / self.args.rho) * (self.alpha)
-            # local_sum = (self.wi - wi_prev) + (1 / self.args.rho) * (self.alpha - alpha_prev)
 
             self.test_acc_personal, self.test_acc_global, self.test_personal_loss, self.test_global_loss = test_inference(self.args, self.model, global_model, self.testloader, self.criterion)
-             # self.test_acc_global = test_inference(self.args, global_model, self.testloader)
-            # self.train_global_loss = self.inference(global_model)
             self.train_global_loss = global_loss
             self.train_personal_loss = epoch_loss[-1]
 
-            # self.train_global_loss = 0
-            #
-            # self.train_personal_loss = 0
             end_time = time.monotonic()
             running_time = end_time - start_time
             print(f"\x1b[{32}m{'Round: {} | Client {} | Personal model Test accuracy: {:.2f}% | Global model Test accuracy: {:.2f}% | Personalized model Test loss: {:.2f} | Global model Test loss: {:.2f} | Time: {:.2f}s'.format(global_round, UserID, 100*self.test_acc_personal, 100*self.test_acc_global, self.test_personal_loss, self.test_global_loss, running_time)}\x1b[0m")
 
-            # return self.test_acc_personal, self.train_personal_loss, self.test_acc_global,
 
     def inference(self, personalized_model, global_model):
         personalized_model.eval()
@@ -368,32 +248,6 @@ class PerLocalUpdate(object):
         return personalized_loss, global_loss
 
 def test_inference(args, personal_model, global_model, testloader, criterion):
-
-    # loss, total, personal_correct, global_correct = 0.0, 0.0, 0.0,0.0
-    # args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # # testloader = DataLoader(test_dataset, batch_size=args.local_bs, shuffle=False)
-    #
-    # for batch_idx, (images, labels) in enumerate(testloader):
-    #     images, labels = images.to(args.device), labels.to(args.device)
-    #     if args.model == 'MLP' or args.model == 'MLR':
-    #         images = images.reshape(-1, 784)
-    #     personal_outputs = personal_model(images)
-    #     global_outputs = global_model(images)
-    #     # batch_loss = criterion(outputs, labels)
-    #     # loss += batch_loss.item()
-    #     _, personal_pred_labels = torch.max(personal_outputs, 1)
-    #     _, global_pred_labels = torch.max(global_outputs, 1)
-    #
-    #     personal_pred_labels = personal_pred_labels.view(-1)
-    #     personal_correct += torch.sum(torch.eq(personal_pred_labels, labels)).item()
-    #
-    #     global_pred_labels = global_pred_labels.view(-1)
-    #     global_correct += torch.sum(torch.eq(global_pred_labels, labels)).item()
-    #
-    #     total += len(labels)
-    #
-    # personal_accuracy = personal_correct/total
-    # global_accuracy = global_correct/total
     personal_model.eval()
     global_model.eval()
     personal_correct, global_correct = 0, 0

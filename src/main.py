@@ -113,10 +113,8 @@ if __name__ == '__main__':
     if args.corrupted == '1':
         malicious_users = np.random.choice(range(args.num_users), max(int(args.num_malicious * args.num_users), 1), replace=False)
 
-
     for idx in range(args.num_users):
         local_model.append(GlobalLocalUpdate(args=args, global_model=global_model, dataset=dataset, idxs=user_groups[idx], logger=logger, user_id=idx, malicious_users=malicious_users))
-
     
     train_loss_avg, test_acc_avg, test_loss_avg, test_acc_variance, test_loss_variance, f1_avg, auc_avg= average_loss_acc_centralized(local_model, args.num_users, malicious_users)
     
@@ -137,8 +135,6 @@ if __name__ == '__main__':
         m1 = max(int(args.frac_candidates * args.num_users), 1)
         m2 = max(int(args.frac * args.num_users), 1)
 
-        # print(f'\n | Global Training Round : {epoch+1} |\n')
-
         global_model.train()
         idxs_candidates_users = np.random.choice(range(args.num_users), m1, replace=False)
 
@@ -147,12 +143,6 @@ if __name__ == '__main__':
             for idx in idxs_candidates_users:
                 gradient_L2 = local_model[idx].calculate_gradient_l2_norm(w)
                 gradients_L2.append((idx, gradient_L2))
-
-                # gradients_norm = [item[1] for item in gradients_L2]
-                # item0_gradients_L2 = [item[0] for item in gradients_L2]
-                # total_gradient = sum(gradients_norm)
-                # probabilities = [gradient / total_gradient for gradient in gradients_norm]
-                # idxs_users = np.random.choice(item0_gradients_L2, size=m2, p=probabilities, replace=False)
 
                 sorted_norms = sorted(gradients_L2, key=lambda x: x[1], reverse=True)
             idxs_users = [x[0] for x in sorted_norms[:m2]]
@@ -164,11 +154,8 @@ if __name__ == '__main__':
         else:
             exit('Error: unrecognized client selection strategy.')
 
-        #  不用看
-        
-
         print(f"\n \x1b[{35}m{'The IDs of selected clients:{}'.format(np.sort(idxs_users))}\x1b[0m")
-        # Update local and central models
+
 
 
         lr = args.lr
@@ -177,9 +164,6 @@ if __name__ == '__main__':
 
             local_test_accuracies_personal.append(copy.deepcopy(local_test_acc_personal))
             heterogeneous_param_list.append(heterogeneous_param)
-            # local_sum.append(copy.deepcopy(lsum))
-
-        # update_msg = average_weights(local_sum, args.num_users, args.aggr, args.num_malicious)  # update ui
 
         for key in w.keys():
             w[key] = w[key].float() 
@@ -187,9 +171,6 @@ if __name__ == '__main__':
             for i in range(0, len(local_model)):
                 w[key] += (local_model[i].weights[key] + (1 / args.rho) * local_model[i].alpha[key]) * 1.0 / args.num_users
 
-        # for key in w.keys():                   
-        #     w[key] = w[key] + update_msg[key]
-            # w[key] = copy.deepcopy(update_msg[key])
         norm_param = sum(heterogeneous_param_list) / len(heterogeneous_param_list)
         global_model.load_state_dict(w)
         train_loss_avg, test_acc_avg, test_loss_avg, test_acc_variance, test_loss_variance, f1_avg, auc_avg= average_loss_acc_centralized(local_model, args.num_users, malicious_users)
@@ -239,22 +220,21 @@ if __name__ == '__main__':
 
     def convert_to_serializable(obj):
         if isinstance(obj, torch.Tensor):
-            return obj.tolist()  # 将 Tensor 转为 list
+            return obj.tolist()  
         elif isinstance(obj, dict):
-            return {k: convert_to_serializable(v) for k, v in obj.items()}  # 递归处理字典
+            return {k: convert_to_serializable(v) for k, v in obj.items()}  
         elif isinstance(obj, list):
-            return [convert_to_serializable(i) for i in obj]  # 递归处理列表
+            return [convert_to_serializable(i) for i in obj] 
         else:
-            return obj  # 其他类型保持不变
+            return obj  
     
     output_serializable = convert_to_serializable(output)
 
-    # 写入 JSON 文件
+
     with open(data_file, "w") as dataf:
         json.dump(output_serializable, dataf)        
         
-    # with open(data_file, "w") as dataf:
-    #     json.dump(output, dataf)
+
 
         
 

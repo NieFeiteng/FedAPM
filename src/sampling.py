@@ -100,21 +100,6 @@ def noise_feature_skew(dataset_name, dataset, num_users):
         user_data_indices.append(user_indices)
         current_length = end_index
 
-    # noisy_data = []
-    # user_id = 
-    # for user_indices in user_data_indices:
-    #     user_id = user_id + 1
-    #     noise_scale = 0 * user_id/num_users
-    #     user_data = all_data[user_indices]
-    #     all_data[user_indices] = all_data[user_indices]
-    #
-    #
-    #     all_data[user_indices] = (all_data[user_indices] + np.random.normal(scale=noise_scale, size=user_data.shape)).astype(np.float32)
-    #
-    #
-    # noisy_targets = all_targets
-    # noisy_dataset = torch.utils.data.TensorDataset(torch.tensor(all_data.astype(np.float32)), torch.tensor(noisy_targets))
-
     return user_data_indices
 
 def feature_skew(dataset, num_users):
@@ -126,7 +111,6 @@ def feature_skew(dataset, num_users):
     user_data_indices = {}
     start_data_id = 0
     start_id = 0
-    # for creator_idx, creator_data_count in enumerate(creators):
     num_shards = writers_num // num_users
     for user_id in range(num_users):
         user_i_data_indices = []

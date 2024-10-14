@@ -64,7 +64,7 @@ run_experiment() {
 
     echo "Running experiment for $dataset with seed=$seed, lr=$lr, rho=$rho, frac=$frac, layer_num=$layer_num, num_users=$num_users" >> log_fedapm_experiments.txt 2>&1
 
-    python ./c1.py --framework $framework \
+    python ./main.py --framework $framework \
         --partition "q-label-skew" \
         --num_users "$num_users" \
         --model "$model" \

@@ -84,7 +84,5 @@ def main():
     plt.close()
     print(f"Training loss plot saved at {plot_file}")
     
-    
-
 if __name__ == "__main__":
     main()

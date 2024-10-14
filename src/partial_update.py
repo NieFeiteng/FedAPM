@@ -201,12 +201,10 @@ class GlobalLocalUpdate(object):
         if self.args.framework == 'FedAPM':
             for key in self.alpha.keys():
                 self.alpha[key] = self.alpha[key] + self.args.rho * (self.weights[key]-w[key])
-                # local_sum[key] = (self.weights[key] - model_prev[key]) + (1/self.args.rho) * (self.alpha[key]-alpha_prev[key])
                 local_sum[key] = (self.weights[key] + (1 / self.args.rho) * self.alpha[key])
                                     
         elif self.args.framework == 'FedAvg' or self.args.framework == 'FedProx' or self.args.framework == 'FedAlt' or self.args.framework == 'FedSim':  
             for key in self.alpha.keys():
-                # local_sum[key] = self.weights[key] - model_prev[key]
                 local_sum[key] = self.weights[key] 
         heterogeneous_param =  0 
         for key in remaining_layers_names:
@@ -235,7 +233,6 @@ class GlobalLocalUpdate(object):
                 outputs, _ = self.model(
                     x_a.float(), x_b.float(), l_a, l_b
                 )    
-                # outputs = torch.log_softmax(outputs, dim=1)
                 loss = self.criterion(outputs, y)         
             else:
                 images, labels = batch_data

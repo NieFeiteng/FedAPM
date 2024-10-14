@@ -33,9 +33,7 @@ def main():
     if dataset_name not in dataset_model_map:
         print(f"Model not found for dataset {dataset_name}")
         return
-
     model_name = dataset_model_map[dataset_name]
-
     frameworks = ['FedAPM', 'FedAvg', 'FedAlt', 'FedSim', 'FedProx']
 
     # Regular expression to parse filenames
@@ -60,9 +58,6 @@ def main():
         print(f"No files found for dataset {dataset_name} and seed {seed_value}")
         return
 
-    # Prepare result directory
-
-
     os.makedirs(result_dir, exist_ok=True)
 
     # Plot test accuracy
@@ -74,7 +69,6 @@ def main():
                 data = json.load(f)
                 test_acc = data.get('test_acc', [])
                 plt.plot(test_acc, label=f'{framework} Test Accuracy', linewidth=2)
-    # plt.title(f'Test Accuracy Comparison for Seed {seed_value}')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
@@ -83,10 +77,6 @@ def main():
     plt.savefig(plot_file)
     plt.close()
     print(f"Test accuracy plot saved at {plot_file}")
-
-
-
-
 
 
 if __name__ == "__main__":

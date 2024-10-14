@@ -63,7 +63,7 @@ for framework in "${frameworks[@]}"; do
         echo "Learning Rate: $lr" >> log_base.txt 2>&1
         echo "Seed: $seed" >> log_base.txt 2>&1
 
-        python ./c1.py --framework $framework \
+        python ./main.py --framework $framework \
                     --partition q-label-skew \
                     --num_users $num_users \
                     --model $model \

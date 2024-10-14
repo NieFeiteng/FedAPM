@@ -89,7 +89,6 @@ def get_dataset(args):
         iid = args.iid
         setup_seed(args.seed)
         samples_per_user = np.random.randint(5000, 10000, size=(NUM_USER,))
-        # samples_per_user = (np.random.lognormal(4, 2, (NUM_USER)).astype(int) + 50) * 5
         num_samples = np.sum(samples_per_user)
 
         X_split = []
@@ -228,8 +227,6 @@ def get_dataset(args):
         elif args.partition == 'feature-skew':
             pass
 
-        # elif args.partition == 'noise-feature-skew':
-        #     combined_data, user_groups = noise_feature_skew(args.dataset, combined_data, args.num_users)
         elif args.partition == 'quality-skew':
             user_groups = noise_feature_skew(args.dataset, combined_data, args.num_users)
         elif args.partition == 'dir-quantity-skew':
@@ -240,8 +237,6 @@ def get_dataset(args):
     return combined_data, user_groups
 
 def average_loss_acc(local_model, num_users, malicious_users):
-    # train_loss_personal_local, train_loss_global_local = 0, 0
-    # test_acc_personal_local, test_acc_global_local = 0, 0
     benign_users = list(set((range(num_users))) - set(malicious_users))
     num_benign_users = len(benign_users)
     train_loss_personal_local, train_loss_global_local, test_acc_personal_local, test_acc_global_local = [], [], [], []
@@ -278,10 +273,6 @@ def average_loss_acc(local_model, num_users, malicious_users):
     test_loss_personal_variance = statistics.variance(test_loss_personal_local)
     test_loss_global_variance = statistics.variance(test_loss_global_local)
     test_loss_hybrid_variance = statistics.variance(test_loss_hybrid_local)
-    # train_loss_personal_avg = train_loss_personal_local/num_benign_users
-    # train_loss_global_avg = train_loss_global_local/num_benign_users
-    # test_acc_personal_avg = test_acc_personal_local/num_benign_users
-    # test_acc_global_avg = test_acc_global_local/num_benign_users
     return (train_loss_hybrid_avg,test_acc_hybrid_avg, test_loss_hybrid_avg, train_loss_global_avg, train_loss_personal_avg,
             test_acc_personal_avg, test_acc_global_avg, test_loss_personal_avg, test_loss_global_avg, test_acc_personal_variance,
             test_acc_global_variance,test_loss_personal_variance,test_loss_global_variance, test_acc_hybrid_variance, test_loss_hybrid_variance)
@@ -293,11 +284,6 @@ def average_loss_acc_centralized(local_model, num_users, malicious_users):
     benign_users = list(set((range(num_users))) - set(malicious_users))
     num_benign_users = len(benign_users)
     for idx in benign_users:
-        # train_loss_local += local_model[idx].train_loss
-        # test_acc_local += local_model[idx].test_acc
-        # test_loss_local += local_model[idx].test_loss
-
-
         train_loss_local.append(local_model[idx].train_loss)
         test_acc_local.append(local_model[idx].test_acc)
         test_loss_local.append(local_model[idx].test_loss)
@@ -345,11 +331,9 @@ def average_weights(w, num_users, aggr, malicious_frac):
         tmp_solns = [chosen_solns[i] for i in torch.topk(scores, 5, largest=False).indices]
         stacked_solns = torch.stack(tmp_solns)
 
-
         w_avg = torch.mean(stacked_solns, dim=0)
 
         w_avg = set_flat_params_to_param_groups(w[0], w_avg)
-        # w_avg = chosen_solns[torch.topk(scores, 5, largest=False).item()]
     return w_avg
 
 def exp_details(args):
@@ -387,4 +371,3 @@ def clip_norm(gradient, c):
 def generate_gaussian_matrix(mean, variance, shape):
     gaussian_noise = torch.randn(shape) * torch.sqrt(torch.tensor(variance)) + torch.tensor(mean)
     return gaussian_noise
-

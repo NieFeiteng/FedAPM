@@ -412,15 +412,6 @@ class DataloadManager():
         with open(str(data_path), "rb") as f: 
             data_dict = pickle.load(f)
         return data_dict
-
-        # num_samples = len(data_dict)
-        
-        # split_idx = int(num_samples * 0.8)
-
-        # train_data_dict = data_dict[:split_idx]  
-        # test_data_dict = data_dict[split_idx:]
-
-        # return train_data_dict, test_data_dict  
     
     def load_acc_feat(
             self, 
@@ -545,15 +536,6 @@ class DataloadManager():
             
         with open(str(data_path), "rb") as f: 
             data_dict = pickle.load(f)
-            
-        # num_samples = len(data_dict)
-        
-        # split_idx = int(num_samples * 0.8)
-
-        # train_data_dict = data_dict[:split_idx]  
-        # test_data_dict = data_dict[split_idx:]
-
-        # return train_data_dict, test_data_dict      
         return data_dict      
     
     def load_ecg_feat(
