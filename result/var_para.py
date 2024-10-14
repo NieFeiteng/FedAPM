@@ -107,7 +107,7 @@ def main():
             if (dataset_name == 'crisis_mmd' and param == 'rho'):
                 ax_inset = inset_axes(ax, width="40%", height="40%", loc="upper right")
                 ax_inset.set_xlim(40, 80 )  # Adjust zoom region as needed
-                ax_inset.set_ylim(min(avg_loss[40:80]) - 0.01, max(avg_loss[40:80]) + 0.01)
+                ax_inset.set_ylim(min(avg_loss[40:80]) - 0.01, max(avg_loss[40:80]) + 0.3)
                 for param_value, color, linestyle, marker in zip(param_values, colors, linestyles, markers):
                     if param_value in loss_data and loss_data[param_value]:
                         avg_loss = np.mean(loss_data[param_value], axis=0)
