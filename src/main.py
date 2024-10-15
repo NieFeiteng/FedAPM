@@ -35,34 +35,15 @@ if __name__ == '__main__':
     dataset, user_groups = get_dataset(args)
 
     local_model, model = [], []
-    if args.dataset == 'mnist' or args.dataset == 'fmnist':
-        input_size = 784
-        num_classes = 10
-        args.num_classes = num_classes
-    if args.model == 'Model1':
-        global_model = Model1(args=args)
-    elif args.model == 'Model2':
-        global_model = Model2(args=args)
-    elif args.model == 'MLP':
+
+    if args.model == 'MLP':
         input_size = 784
         num_classes = 10
         global_model = MLP(input_size, num_classes)
-    elif args.model == 'MLR':
-        global_model = MLR(args=args)
     elif args.model == 'CNN':
         num_classes = 10
         args.num_classes = num_classes
         global_model = CNN()
-    elif args.model == 'SVM':
-        global_model = SVM()
-    elif args.model == 'CNN1':
-        global_model = CNN1()
-    elif args.model == 'CNN2':
-        global_model = CNN2()
-    elif args.model == 'ResNet18':
-        num_classes = 10
-        args.num_classes = num_classes
-        global_model = ResNet18(BasicBlock, [2,2,2,2], num_classes)   
     elif args.model == 'ImageTextClassifier': 
         args.num_classes = num_class_dict[args.dataset],
         global_model = ImageTextClassifier(
@@ -139,14 +120,7 @@ if __name__ == '__main__':
         idxs_candidates_users = np.random.choice(range(args.num_users), m1, replace=False)
 
         # Client selection:
-        if args.strategy == 'biased':
-            for idx in idxs_candidates_users:
-                gradient_L2 = local_model[idx].calculate_gradient_l2_norm(w)
-                gradients_L2.append((idx, gradient_L2))
-
-                sorted_norms = sorted(gradients_L2, key=lambda x: x[1], reverse=True)
-            idxs_users = [x[0] for x in sorted_norms[:m2]]
-        elif args.strategy == 'random':
+        if args.strategy == 'random':
             idxs_users = np.random.choice(idxs_candidates_users, m2, replace=False)
         elif args.strategy == 'full':
             idxs_users = range(args.num_users)
@@ -201,7 +175,7 @@ if __name__ == '__main__':
     output['auc'] = auc
     output['norm'] = norm_params
 
-    data_file = '../../save/{}_{}_{}_{}_lr_{}_frac_{}_seed_{}_users_{}_rho_{}_lambda_{}_epoch_{}_partition_{}_q_{}_attack_{}_num_malicious_{}_aggr_{}.json'.format(args.dataset,
+    data_file = '../../save/{}_{}_{}_{}_lr_{}_frac_{}_seed_{}_users_{}_rho_{}_{}_epoch_{}_partition_{}_q_{}_attack_{}_num_malicious_{}_aggr_{}.json'.format(args.dataset,
                                                                                                         args.model,
                                                                                                         args.framework,
                                                                                                         args.strategy,
@@ -210,7 +184,6 @@ if __name__ == '__main__':
                                                                                                         args.seed,
                                                                                                         args.num_users,
                                                                                                         args.rho,
-                                                                                                        args.Lambda,
                                                                                                         args.local_ep,
                                                                                                         args.partition,
                                                                                                         args.q,

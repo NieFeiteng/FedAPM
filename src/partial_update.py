@@ -6,11 +6,8 @@ import random
 import math
 import torchmetrics
 
-from utils import clip_norm, generate_gaussian_matrix
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from models import Model1, Model2, MLP, ResNet18
-from utils import get_flat_model_params, set_flat_params_to_param_groups
 import numpy as np
 from get_multimodal import get_multimodal_dataloaders
 import torchmetrics
@@ -121,7 +118,7 @@ class GlobalLocalUpdate(object):
                     else:
                         images, labels = batch_data
                         images, labels = images.to(self.args.device), labels.to(self.args.device)
-                        if self.args.model == 'MLP' or self.args.model == 'MLR':
+                        if self.args.model == 'MLP':
                             images = images.reshape(-1, 784)
     
                     for param in params1:
@@ -190,9 +187,7 @@ class GlobalLocalUpdate(object):
             if framework != 'FedSim':
                 framework_common_step(optimizer_step2, remaining_layers_params, first_n_layers_params, framework, True)
             if framework == 'FedSim':
-                framework_common_step(optimizer_step1, remaining_layers_params, first_n_layers_params, framework, True)
-            # epoch_loss.append(sum(batch_loss))
-            
+                framework_common_step(optimizer_step1, remaining_layers_params, first_n_layers_params, framework, True)  
             
         execute_epoch(E, optimizer_step1, optimizer_step2, self.args.framework)
 
@@ -228,8 +223,7 @@ class GlobalLocalUpdate(object):
                 x_a, x_b, l_a, l_b, y = batch_data
                 x_a, x_b, y = x_a.to(self.args.device), x_b.to(self.args.device), y.to(self.args.device)
                 l_a, l_b = l_a.to(self.args.device), l_b.to(self.args.device)
-                
-                # forward
+            
                 outputs, _ = self.model(
                     x_a.float(), x_b.float(), l_a, l_b
                 )    
@@ -237,7 +231,7 @@ class GlobalLocalUpdate(object):
             else:
                 images, labels = batch_data
                 images, labels = images.to(self.args.device), labels.to(self.args.device)
-                if self.args.model == 'MLP' or self.args.model == 'MLR':
+                if self.args.model == 'MLP':
                     images = images.reshape(-1, 784)
                 outputs = model(images)
                 batch_loss = self.criterion(outputs, labels.long())
