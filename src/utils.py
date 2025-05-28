@@ -1,22 +1,133 @@
 import copy
 import torch
-import torch.nn as nn
-import numpy as np
 import random
-from torchvision import datasets, transforms
-from sampling import mnist_iid, q_label_skew,dir_label_skew, 
-from torch.utils.data import ConcatDataset
-
 import statistics
-
-from torch.utils.model_zoo import tqdm
-
+import numpy as np
 import pandas as pd
-import sys
-import os
-import pickle
+import torch.nn as nn
+from torchvision import datasets, transforms
+from torchvision.datasets import ImageFolder
+from sklearn.preprocessing import StandardScaler
+from constants import feature_len_dict, num_class_dict
+from torch.utils.data import TensorDataset, ConcatDataset
+from sampling import dir_quantity_skew,feature_skew, hybrid_skew
+from sampling import mnist_iid, q_label_skew, covtype_noniid,dir_label_skew, noise_feature_skew
+from models import MLP, MLR, CNN, SVM, CNN1, CNN2, ResNet18, BasicBlock, ImageTextClassifier, HARClassifier, MMActionClassifier, ECGClassifier
 
 
+def get_flat_model_params(model):
+    params = []
+    for name, param in model.items():
+        params.append(param.data.view(-1))
+    flat_params = torch.cat(params)
+    return flat_params
+
+def set_flat_params_to_param_groups(param_groups, flat_params):
+    prev_ind = 0
+    for name, param in param_groups.items():
+        flat_size = int(np.prod(list(param.size())))
+        param.data.copy_(
+            flat_params[prev_ind:prev_ind + flat_size].view(param.size())
+        )
+        prev_ind += flat_size
+    return param_groups
+
+
+def load_model(args):
+    if args.dataset == 'mnist' or args.dataset == 'fmnist':
+        input_size = 784
+        num_classes = 10
+        args.num_classes = num_classes
+    elif args.model == 'MLP':
+        input_size = 784
+        num_classes = 10
+        global_model = MLP(input_size, num_classes)
+    elif args.model == 'MLR':
+        global_model = MLR(args=args)
+    elif args.model == 'CNN':
+        num_classes = 10
+        args.num_classes = num_classes
+        global_model = CNN()
+    elif args.model == 'SVM':
+        global_model = SVM()
+    elif args.model == 'CNN1':
+        global_model = CNN1()
+    elif args.model == 'CNN2':
+        global_model = CNN2()
+    elif args.model == 'ResNet18':
+        if args.dataset == 'cifar100':
+            num_classes = 100
+        elif args.dataset == 'tinyImageNet':
+            num_classes = 200
+        args.num_classes = num_classes
+        global_model = ResNet18(BasicBlock, [2,2,2,2], num_classes)   
+    elif args.model == 'ImageTextClassifier': 
+        args.num_classes = num_class_dict[args.dataset],
+        global_model = ImageTextClassifier(
+            num_classes=num_class_dict[args.dataset],
+            img_input_dim=feature_len_dict["mobilenet_v2"], 
+            text_input_dim=feature_len_dict["mobilebert"],
+            d_hid=args.hid_size,
+            en_att=True,
+            att_name=args.att_name,
+            is_adapter = False
+        )
+    elif args.model == 'HARClassifier': 
+        args.num_classes = num_class_dict[args.dataset],
+        global_model = HARClassifier(
+            num_classes=num_class_dict[args.dataset],        
+            acc_input_dim=feature_len_dict['acc'],    
+            gyro_input_dim=feature_len_dict['gyro'],  
+            en_att=True,                                           
+            d_hid=args.hid_size,
+            att_name=args.att_name,
+            is_adapter = False
+        )                
+    elif args.model == 'MMActionClassifier': 
+        args.num_classes = num_class_dict[args.dataset],
+        global_model = MMActionClassifier(
+            num_classes=num_class_dict[args.dataset],        
+            audio_input_dim=feature_len_dict["mfcc"],    
+            video_input_dim=feature_len_dict["mobilenet_v2"], 
+            d_hid=args.hid_size,
+            en_att=True,                  
+            att_name=args.att_name,
+            is_adapter = False
+        )
+    elif args.model == 'ECGClassifier': 
+        args.num_classes = num_class_dict[args.dataset],
+        global_model = ECGClassifier(
+            num_classes=num_class_dict[args.dataset],     
+            i_to_avf_input_dim=feature_len_dict['i_to_avf'],     
+            v1_to_v6_input_dim=feature_len_dict['v1_to_v6'],     
+            en_att=True,   
+            d_hid=args.hid_size,          
+            att_name=args.att_name
+        )                    
+    else:
+        exit('Error: unrecognized model')
+
+    return global_model
+
+def softmax(x):
+    ex = np.exp(x)
+    sum_ex = np.sum( np.exp(x))
+    return ex/sum_ex
+
+def merge_user_data(user_data_list):
+    merged_data = []
+    user_data_indices = []
+
+    for user_index, user_data in enumerate(user_data_list):
+        merged_data.extend(user_data)
+        user_indices = [user_index] * len(user_data)
+        user_data_indices.extend(user_indices)
+
+    return merged_data, user_data_indices
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        torch.nn.init.constant_(m.weight, 0)
+        torch.nn.init.constant_(m.bias, 0)
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -30,14 +141,130 @@ def c(m):
 
 def get_dataset(args):
 
-    if args.dataset == 'crisis_mmd' or args.dataset == 'ku_har' or args.dataset == 'crema_d':
+    if args.dataset == 'hateful_memes' or args.dataset == 'crisis_mmd' or args.dataset == 'uci_har' or args.dataset == 'ku_har' or args.dataset == 'crema_d' or args.dataset == 'ptb-xl':
         combined_data = None
         user_groups = [None] * args.num_users
         return combined_data, user_groups    
   
     
-    elif args.dataset == 'cifar10':
-        if args.dataset == 'cifar10':
+    elif args.dataset == 'synthetic':
+        dimension = 60
+        NUM_CLASS = 10
+        NUM_USER = args.num_users
+        alpha = 0.5
+        beta = 0.5
+        iid = args.iid
+        setup_seed(args.seed)
+        samples_per_user = np.random.randint(5000, 10000, size=(NUM_USER,))
+        num_samples = np.sum(samples_per_user)
+
+        X_split = []
+        y_split = []
+        user_groups = [[] for _ in range(NUM_USER)]
+
+        #### define some eprior ####
+        mean_W = np.random.normal(0, alpha, NUM_USER)
+        mean_b = mean_W
+        B = np.random.normal(0, beta, NUM_USER)
+        mean_x = np.zeros((NUM_USER, dimension))
+
+        diagonal = np.zeros(dimension)
+        for j in range(dimension):
+            diagonal[j] = np.power((j + 1), -1.2)
+        cov_x = np.diag(diagonal)
+
+        for i in range(NUM_USER):
+            if iid == 1:
+                mean_x[i] = np.ones(dimension) * B[i]  # all zeros
+            else:
+                mean_x[i] = np.random.normal(B[i], 1, dimension)
+
+        if iid == 1:
+            W_global = np.random.normal(0, 1, (dimension, NUM_CLASS))
+            b_global = np.random.normal(0, 1, NUM_CLASS)
+
+        pointer = 0
+        for i in range(0, NUM_USER):
+
+            W = np.random.normal(mean_W[i], 1, (dimension, NUM_CLASS))
+            b = np.random.normal(mean_b[i], 1, NUM_CLASS)
+
+            if iid == 1:
+                W = W_global
+                b = b_global
+
+            xx = np.random.multivariate_normal(mean_x[i], cov_x, samples_per_user[i])
+            yy = np.zeros(samples_per_user[i])
+
+            for j in range(samples_per_user[i]):
+                tmp = np.dot(xx[j], W) + b
+                yy[j] = np.argmax(softmax(tmp))
+
+            xx = xx.tolist()
+            yy = yy.tolist()
+
+            X_split.extend(xx)
+            y_split.append(yy)
+            user_groups[i] = list(range(pointer, pointer + samples_per_user[i]))
+            pointer = pointer + samples_per_user[i]
+        label_list = [item for sublist in y_split for item in sublist]
+        features_tensor = torch.tensor(X_split, dtype=torch.float32)
+        labels_tensor = torch.tensor(label_list, dtype=torch.int64)
+        combined_data = TensorDataset(features_tensor, labels_tensor)
+
+    elif args.dataset == 'covtype':
+        data_dir = '../data/covtype/covtype.data'
+        df = pd.read_csv(data_dir,header=None)
+        features = df.iloc[:, :-1].values
+        labels = df.iloc[:, -1].values-1
+        scaler = StandardScaler()
+        features_normalized = scaler.fit_transform(features)
+        features_tensor = torch.tensor(features_normalized, dtype=torch.float32).to(args.device)
+        labels_tensor = torch.tensor(labels).to(args.device)
+        combined_data = TensorDataset(features_tensor, labels_tensor)
+
+        user_groups = covtype_noniid(labels, args.num_users, args.q)
+    elif args.dataset == 'mnist' or args.dataset == 'fmnist' or args.dataset == 'mmnist' or args.dataset == 'cifar10' or args.dataset == 'femnist' or args.dataset == 'cifar100' or args.dataset == 'tinyImageNet':
+        if args.dataset == 'mnist':
+            data_dir = '../data/mnist/'
+
+            apply_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))])
+
+            train_dataset = datasets.MNIST(data_dir, train=True, download=True,
+                                       transform=apply_transform)
+
+            test_dataset = datasets.MNIST(data_dir, train=False, download=True,
+                                      transform=apply_transform)
+            combined_data = ConcatDataset([train_dataset, test_dataset])
+        elif args.dataset == 'mmnist':
+            data_dir = '../data/mmnist/'
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.3), (0.3))
+            ])
+
+            combined_data = ImageFolder(data_dir, transform=transform)
+
+        elif args.dataset == 'fmnist':
+            data_dir = '../data/fmnist/'
+
+            apply_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))])
+
+            train_dataset = datasets.FashionMNIST(data_dir, train=True, download=True,
+                                       transform=apply_transform)
+
+            test_dataset = datasets.FashionMNIST(data_dir, train=False, download=True,
+                                      transform=apply_transform)
+            combined_data = ConcatDataset([train_dataset, test_dataset])
+        elif args.dataset == 'femnist':
+            data_dir = '../data/femnist/'
+            dataset = torch.load(data_dir+'femnist.pt')
+            combined_data = TensorDataset(dataset[0], dataset[1])
+        elif args.dataset == 'cifar10':
             data_dir = '../data/cifar/'
             apply_transform = transforms.Compose(
                 [transforms.ToTensor(),
@@ -47,13 +274,47 @@ def get_dataset(args):
 
             test_dataset = datasets.CIFAR10(data_dir, train=False, download=True, transform=apply_transform)
             combined_data = ConcatDataset([train_dataset, test_dataset])
+        elif args.dataset == 'cifar100':
+            data_dir = '../data/cifar100/'
+            apply_transform = transforms.Compose(
+                [transforms.ToTensor(),
+                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            train_dataset = datasets.CIFAR100(data_dir, train=True, download=True, transform=apply_transform)
+            test_dataset = datasets.CIFAR100(data_dir, train=False, download=True, transform=apply_transform)
+            combined_data = ConcatDataset([train_dataset, test_dataset])
+        elif args.dataset == 'tinyImageNet':
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+
+            train_dataset = datasets.ImageFolder(root='./data/tiny-imagenet-200/train', transform=transform)
+            test_dataset = datasets.ImageFolder(root='./data/tiny-imagenet-200/val', transform=transform)
+            combined_data = ConcatDataset([train_dataset, test_dataset])
+
 
         if args.iid:
             user_groups = mnist_iid(combined_data, args.num_users)
         elif args.partition == 'dir-label-skew':
             user_groups = dir_label_skew(args.dataset, combined_data, args.num_users)
+
+        elif args.partition == 'feature-skew':
+            # only femnist use this partition
+            user_groups = feature_skew(dataset, args.num_users)
+
+
         elif args.partition == 'q-label-skew':
             user_groups = q_label_skew(args.dataset, combined_data, args.num_users, args.q)
+        elif args.partition == 'feature-skew':
+            pass
+        elif args.partition == 'quality-skew':
+            user_groups = noise_feature_skew(args.dataset, combined_data, args.num_users)
+        elif args.partition == 'dir-quantity-skew':
+            user_groups = dir_quantity_skew(args.dataset, combined_data, args.num_users)
+        elif args.partition == 'hybrid-skew':
+            user_groups = hybrid_skew(args.dataset, combined_data, args.num_users, args.q)
+
+
 
 
     return combined_data, user_groups
@@ -92,9 +353,11 @@ def average_loss_acc(local_model, num_users, malicious_users):
     test_acc_personal_variance = statistics.variance(test_acc_personal_local)
     test_acc_global_variance = statistics.variance(test_acc_global_local)
     test_acc_hybrid_variance = statistics.variance(test_acc_hybrid_local)
+
     test_loss_personal_variance = statistics.variance(test_loss_personal_local)
     test_loss_global_variance = statistics.variance(test_loss_global_local)
     test_loss_hybrid_variance = statistics.variance(test_loss_hybrid_local)
+
     return (train_loss_hybrid_avg,test_acc_hybrid_avg, test_loss_hybrid_avg, train_loss_global_avg, train_loss_personal_avg,
             test_acc_personal_avg, test_acc_global_avg, test_loss_personal_avg, test_loss_global_avg, test_acc_personal_variance,
             test_acc_global_variance,test_loss_personal_variance,test_loss_global_variance, test_acc_hybrid_variance, test_loss_hybrid_variance)
@@ -109,23 +372,49 @@ def average_loss_acc_centralized(local_model, num_users, malicious_users):
         train_loss_local.append(local_model[idx].train_loss)
         test_acc_local.append(local_model[idx].test_acc)
         test_loss_local.append(local_model[idx].test_loss)
-        
         F1_local.append(local_model[idx].f1)
-        AUC_local.append(local_model[idx].auc)
+        if local_model[idx].auc != -1:
+            AUC_local.append(local_model[idx].auc)
 
     train_loss_avg = sum(train_loss_local) / num_benign_users
     test_acc_avg = sum(test_acc_local) / num_benign_users
     test_loss_avg = sum(test_loss_local) / num_benign_users
     
     test_F1_avg = sum(F1_local) / num_benign_users
-    test_AUC_avg = sum(AUC_local) / num_benign_users    
+    test_AUC_avg = sum(AUC_local) / len(AUC_local)    
 
     test_acc_variance = statistics.variance(test_acc_local)
     test_loss_variance = statistics.variance(test_loss_local)
 
     return train_loss_avg, test_acc_avg, test_loss_avg, test_acc_variance, test_loss_variance, test_F1_avg, test_AUC_avg
 
-
+def average_weights(w, num_users, aggr, malicious_frac):
+    w_avg = copy.deepcopy(w[0])
+    if aggr == 'regular':
+        for key in w_avg.keys():
+            for i in range(1, len(w)):
+                w_avg[key] += w[i][key]
+            w_avg[key] = torch.div(w_avg[key], num_users)
+    elif aggr == 'mkrum':
+        chosen_solns = copy.deepcopy(w)
+        for i in range(0, len(w)):
+            chosen_solns[i] = get_flat_model_params(w[i])
+        f = int(len(chosen_solns) * malicious_frac)
+        dists = torch.zeros(len(chosen_solns), len(chosen_solns))
+        scores = torch.zeros(len(chosen_solns))
+        for i in range(len(chosen_solns)):
+            for j in range(i, len(chosen_solns)):
+                dists[i][j] = torch.norm(chosen_solns[i] - chosen_solns[j], p=2)
+                dists[j][i] = dists[i][j]
+        for i in range(len(chosen_solns)):
+            d = dists[i]
+            d, _ = d.sort()
+            scores[i] = d[:len(chosen_solns) - f - 1].sum()
+        tmp_solns = [chosen_solns[i] for i in torch.topk(scores, 5, largest=False).indices]
+        stacked_solns = torch.stack(tmp_solns)
+        w_avg = torch.mean(stacked_solns, dim=0)
+        w_avg = set_flat_params_to_param_groups(w[0], w_avg)
+    return w_avg
 
 def exp_details(args):
     print('\nExperimental details:')
@@ -135,22 +424,18 @@ def exp_details(args):
     print(f'    Client selection   : {args.strategy}')
     print(f'    Attack             : {args.corrupted}')
     print(f'    Malicious fraction : {args.num_malicious}')
-
     print(f'    Global Rounds    : {args.epochs}\n')
-
     print('    Federated parameters:')
-    if args.iid:
-        print('    IID')
-    else:
-        print('    Non-IID')
+    if args.iid: print('    IID')
+    else: print('    Non-IID')
     print(f'    dataset            : {args.dataset}')
     print(f'    Data partition     : {args.partition}')
     print(f'    Num of users       : {args.num_users}')
-    print(f'    Fraction of users  : {args.frac}')
+    print(f'    Fraction of users  : {args.frac_clients}')
     print(f'    Learning  Rate     : {args.lr}')
+    print(f'    Lambda:            : {args.Lambda}')
     print(f'    rho                : {args.rho}')
     print(f'    mu                 : {args.mu}')
     print(f'    Local Epochs       : {args.local_ep}')
     print(f'    Local Batch size   : {args.local_bs}\n')
     return
-
